@@ -7,22 +7,51 @@ type User = {
 
 export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Bad: hardcoded API URL, no error handling, no loading state
+  // Fetch all users with proper error handling and loading state
   useEffect(() => {
-    fetch("http://localhost:3000/getUser/1")
-      .then((res) => res.json())
-      .then((data) => setUsers([data]));
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/users");
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        setUsers(data);
+      } catch (err) {
+        setError("Failed to fetch users");
+        console.error("Error fetching users:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
   }, []);
+
+  if (loading) {
+    return <div>Loading users...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div>
       <h2>Users</h2>
-      <ul>
-        {users.map((u) => (
-          <li key={u.id}>{u.name}</li>
-        ))}
-      </ul>
+      {users.length === 0 ? (
+        <p>No users found</p>
+      ) : (
+        <ul>
+          {users.map((u) => (
+            <li key={u.id}>{u.name}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
