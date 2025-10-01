@@ -24,15 +24,6 @@ jobs:
         uses: tabbyml/pochi/packages/github-action@main
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
-        with:
-          args: |
-            /pochi review this PR in detail.
-            After giving your feedback, output the decision on the **last line only**:
-            - ✅ APPROVED  (if the PR can be safely merged)
-            - ❌ CHANGES_REQUIRED  (if the PR has issues that must be fixed first)
-
-      - name: Debug Pochi output
-        run: echo "Pochi output was: ${{ steps.run_pochi.outputs.result }}"
 
   run_tests:
     needs: pochi_review
@@ -43,7 +34,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Tests
-        run: echo "✅ Running fake tests..." && exit 0
+        run: |
+          echo "✅ Running fake tests..."
+          exit 0
 
   deploy:
     needs: run_tests
