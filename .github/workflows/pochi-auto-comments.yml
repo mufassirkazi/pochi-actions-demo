@@ -50,7 +50,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, // 👈 replace with tracking issue ID if you want
+              issue_number: 1, // 👈 replace with an always-open "changelog" issue ID
               body: `/pochi summarize these commits:\n\n${commits}`
             });
 
@@ -99,28 +99,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for Pochi reply
-        run: sleep 25   # give Pochi ~25s to post its broken mermaid
+        run: sleep 45   # give Pochi enough time to post its reply
 
-      - name: Fetch latest Pochi comment
+      - name: Fetch latest Pochi comment with retry
         id: fetch
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           script: |
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              per_page: 5,
-              sort: "created",
-              direction: "desc"
-            });
-
-            const pochiComment = comments.find(c => c.user.login.includes("github-actions"));
-            core.setOutput("comment_body", pochiComment ? pochiComment.body : "");
-            core.setOutput("comment_id", pochiComment ? pochiComment.id : "");
+            let pochiComment = null;
+            for (let attempt = 0; attempt < 5; attempt++) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                per_page: 10,
+                sort: "created",
+                direction: "desc"
+              });
+              pochiComment = comments.find(c =>
+                c.user.login.includes("github-actions") &&
+                c.body.includes("```mermaid")
+              );
+              if (pochiComment) {
+                console.log("Found Pochi comment ✅");
+                break;
+              }
+              console.log(`Retry ${attempt + 1}: Pochi comment not found, waiting 10s...`);
+              await new Promise(r => setTimeout(r, 10000)); // wait 10s
+            }
+            if (!pochiComment) {
+              core.setFailed("Could not find Pochi mermaid comment");
+            } else {
+              core.setOutput("comment_body", pochiComment.body);
+              core.setOutput("comment_id", pochiComment.id);
+            }
 
       - name: Rewrite Mermaid formatting
+        if: steps.fetch.outputs.comment_body != ''
         run: |
           FIXED=$(echo "${{ steps.fetch.outputs.comment_body }}" \
             | sed 's/```mermaid graph/```mermaid\n graph/')
@@ -129,15 +145,14 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Post corrected Mermaid comment
+        if: steps.fetch.outputs.comment_body != ''
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           script: |
-            if (process.env.fixed_body.trim() !== "") {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.issue.number,
-                body: process.env.fixed_body
-              });
-            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: process.env.fixed_body
+            });
