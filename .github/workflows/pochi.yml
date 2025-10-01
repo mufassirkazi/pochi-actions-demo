@@ -25,6 +25,12 @@ jobs:
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
 
+      - name: Debug Pochi output
+        run: |
+          echo "=== RAW POCHI OUTPUT ==="
+          echo "${{ steps.run_pochi.outputs.result }}"
+          echo "========================"
+
   run_tests:
     needs: pochi_review
     if: contains(needs.pochi_review.outputs.result, '✅ APPROVED')
