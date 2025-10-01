@@ -36,6 +36,11 @@ app.get("/api/users/:id", (req, res) => {
   }
 });
 
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
+
 // Add user with validation and duplicate checking
 app.post("/api/users", (req, res) => {
   try {
