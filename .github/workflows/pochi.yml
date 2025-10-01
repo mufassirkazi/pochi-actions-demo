@@ -14,7 +14,7 @@ jobs:
     if: startsWith(github.event.comment.body, '/pochi')
     runs-on: ubuntu-latest
     outputs:
-      review_result: ${{ steps.run_pochi.outputs.result }}
+      result: ${{ steps.run_pochi.outputs.result }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,8 +34,8 @@ jobs:
   run_tests:
     needs: pochi_review
     if: |
-      contains(needs.pochi_review.outputs.review_result, '✅ APPROVED') &&
-      !contains(needs.pochi_review.outputs.review_result, '❌ CHANGES_REQUIRED')
+      contains(needs.pochi_review.outputs.result, '✅ APPROVED') &&
+      !contains(needs.pochi_review.outputs.result, '❌ CHANGES_REQUIRED')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,7 +44,7 @@ jobs:
       - name: Run Tests
         run: |
           echo "✅ Running fake tests..."
-          # replace with your real tests
+          # replace with: npm test
           exit 0
 
   deploy:
