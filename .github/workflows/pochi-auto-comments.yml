@@ -1,6 +1,11 @@
 name: Pochi Auto-Comments
 
 on:
+  pull_request:
+    types: [opened]
+  push:
+    branches:
+      - main
   issues:
     types: [opened]
 
@@ -10,7 +15,50 @@ permissions:
   contents: write
 
 jobs:
+  # -------------------------------
+  # PR auto-summary
+  # -------------------------------
+  pr_auto_summary:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-comment for PR summary
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "/pochi summarize this PR. Provide a high-level overview, key changes, risks, and what to test. (auto-triggered)"
+            });
+
+  # -------------------------------
+  # Push commit summary
+  # -------------------------------
+  push_commit_summary:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-comment for Commit Summary
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          script: |
+            const commits = context.payload.commits.map(c => `- ${c.message}`).join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1, // 👈 replace with tracking issue ID if you want
+              body: `/pochi summarize these commits:\n\n${commits}`
+            });
+
+  # -------------------------------
+  # Issue → design note (Mermaid)
+  # -------------------------------
   issue_design_note:
+    if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
       - name: Auto-comment with Pochi instructions
@@ -43,11 +91,17 @@ jobs:
               body
             });
 
+  # -------------------------------
+  # Fixer for Mermaid formatting
+  # -------------------------------
   fix_mermaid_output:
     needs: issue_design_note
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch latest comment
+      - name: Wait for Pochi reply
+        run: sleep 25   # give Pochi ~25s to post its broken mermaid
+
+      - name: Fetch latest Pochi comment
         id: fetch
         uses: actions/github-script@v7
         with:
@@ -57,14 +111,16 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              per_page: 1,
+              per_page: 5,
               sort: "created",
               direction: "desc"
             });
-            core.setOutput("comment_body", comments[0].body);
+
+            const pochiComment = comments.find(c => c.user.login.includes("github-actions"));
+            core.setOutput("comment_body", pochiComment ? pochiComment.body : "");
+            core.setOutput("comment_id", pochiComment ? pochiComment.id : "");
 
       - name: Rewrite Mermaid formatting
-        id: rewrite
         run: |
           FIXED=$(echo "${{ steps.fetch.outputs.comment_body }}" \
             | sed 's/```mermaid graph/```mermaid\n graph/')
@@ -72,14 +128,16 @@ jobs:
           echo "$FIXED" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Post fixed Mermaid comment
+      - name: Post corrected Mermaid comment
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              body: process.env.fixed_body
-            });
+            if (process.env.fixed_body.trim() !== "") {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: process.env.fixed_body
+              });
+            }
