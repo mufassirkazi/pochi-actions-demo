@@ -61,5 +61,16 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "/pochi reply directly in this issue comment. Do not create files. Include one or more Mermaid diagrams in fenced code blocks with triple backticks, like ```mermaid ... ``` so they render in GitHub. Then add a short explanation below the diagram."
+              body: `/pochi reply directly in this issue comment. 
+              Do not create or edit files. 
+              Only output Mermaid diagrams as fenced code blocks with proper newlines. 
+
+              Example format:
+
+              \`\`\`mermaid
+              graph TD
+                A[Start] --> B[Next]
+                \`\`\`
+                
+                After the diagram, add a short text explanation.`
             });
