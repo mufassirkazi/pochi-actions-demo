@@ -45,10 +45,11 @@ jobs:
               "",
               commits
             ].join("\n");
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, // 👈 Change this to an actual tracking issue number
+              issue_number: 1, // 👈 Replace with an actual tracking issue number
               body
             });
 
@@ -67,14 +68,17 @@ jobs:
               "⚠️ Do not edit files or run commands.",
               "Stay inside this issue comment only.",
               "",
-              "Format requirement:",
+              "Format requirement (copy exactly):",
               "",
-              "```mermaid",     // 👈 here
-              "graph TD",       // 👈 next line after mermaid; notice the line break
+              "```mermaid",
+              "graph TD",
               "  A[Start] --> B[Next]",
-              "```",            // 👈 closing fence
+              "```",
               "",
-              "Notice that after ```mermaid, there is a line break and then each line is added after a line break. You need to follow that format in order for the Mermaid chart to render inside the Github comment. After the diagram, add a short text explanation."
+              "⬆️ Notice the line break right after `mermaid` and before `graph TD`.",
+              "Always output diagrams using this format so GitHub renders them.",
+              "",
+              "After the diagram, add a short text explanation."
             ].join("\n");
 
             await github.rest.issues.createComment({
