@@ -70,13 +70,12 @@ jobs:
               "",
               "When outputting a Mermaid diagram, use **this exact format**:",
               "",
-              "\\`\\`\\`mermaid",
+              "```mermaid",
               "graph TD",
               "  A[Start] --> B[Next]",
-              "\\`\\`\\`",
+              "```",
               "",
-              "⬆️ Copy this style exactly (notice the line breaks).",
-              "Do NOT collapse into one line. Each line must remain separate.",
+              "⬆️ Notice the line break after `mermaid`. Each line must be separate.",
               "",
               "After the diagram, add a short text explanation."
             ].join("\n");
