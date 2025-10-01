@@ -61,5 +61,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "/pochi reply directly in this issue comment with design notes. Do not create new files. Show the solution as a Mermaid diagram (flowchart or architecture graph) in Markdown fenced code block, then add a short text explanation."
+              body: "/pochi reply directly in this issue comment. Do not create files. Include one or more Mermaid diagrams in fenced code blocks with triple backticks, like ```mermaid ... ``` so they render in GitHub. Then add a short explanation below the diagram."
             });
