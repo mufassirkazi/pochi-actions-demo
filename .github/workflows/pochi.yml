@@ -1,48 +1,44 @@
-name: Pochi Reviewer & Gatekeeper
+name: Pochi PR Gatekeeper
 
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [opened, synchronize]
 
 permissions:
   contents: write
-  issues: write
   pull-requests: write
+  issues: write
 
 jobs:
   pochi_review:
-    if: startsWith(github.event.comment.body, '/pochi')
     runs-on: ubuntu-latest
     outputs:
-      result: ${{ steps.run_pochi.outputs.result }}
+      review_result: ${{ steps.run_pochi.outputs.result }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Pochi
+      - name: Run Pochi Review
         id: run_pochi
         uses: tabbyml/pochi/packages/github-action@main
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
+        with:
+          args: "/pochi review this PR and respond with either ✅ APPROVED or ❌ CHANGES_REQUIRED"
 
-      - name: Debug Pochi output
-        run: |
-          echo "=== RAW POCHI OUTPUT ==="
-          echo "${{ steps.run_pochi.outputs.result }}"
-          echo "========================"
+      - name: Debug Pochi Output
+        run: echo "Pochi output was: ${{ steps.run_pochi.outputs.result }}"
 
   run_tests:
     needs: pochi_review
-    if: contains(needs.pochi_review.outputs.result, '✅ APPROVED')
+    if: contains(needs.pochi_review.outputs.review_result, '✅ APPROVED')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Run Tests
-        run: |
-          echo "✅ Running fake tests..."
-          exit 0
+        run: npm test
 
   deploy:
     needs: run_tests
