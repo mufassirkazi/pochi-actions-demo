@@ -1,4 +1,4 @@
-name: Pochi Reviewer & Gatekeeper
+name: Pochi Manual Reviewer
 
 on:
   issue_comment:
@@ -6,8 +6,8 @@ on:
 
 permissions:
   contents: write
-  issues: write
   pull-requests: write
+  issues: write
 
 jobs:
   pochi_review:
@@ -16,37 +16,35 @@ jobs:
     outputs:
       decision: ${{ steps.extract_decision.outputs.decision }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Run Pochi
         id: run_pochi
         uses: tabbyml/pochi/packages/github-action@main
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
+        with:
+          args: "review this PR in detail. At the end, on the last line only, output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED"
 
-      - name: Debug raw output
-        run: |
-          echo "=== RAW POCHI OUTPUT START ==="
-          echo "${{ steps.run_pochi.outputs.result }}"
-          echo "=== RAW POCHI OUTPUT END ==="
-
-      - name: Extract final decision
+      - name: Extract decision
         id: extract_decision
         run: |
-          # Get the last non-empty line of Pochi's output
+          # grab last non-empty line (✅ APPROVED or ❌ CHANGES_REQUIRED)
           decision=$(echo "${{ steps.run_pochi.outputs.result }}" | grep -v '^\s*$' | tail -n 1 | xargs)
-          echo "Final decision: $decision"
           echo "decision=$decision" >> $GITHUB_OUTPUT
+          echo "Decision extracted: $decision"
 
   run_tests:
     needs: pochi_review
     if: needs.pochi_review.outputs.decision == '✅ APPROVED'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - run: npm test
 
-      - name: Run Tests
-        run: |
-          echo "✅ Running f
+  deploy:
+    needs: run_tests
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🚀 Deploying application..."
