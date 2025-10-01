@@ -3,26 +3,58 @@ import express from "express";
 const app = express();
 app.use(express.json());
 
-let tasks: any[] = [];
+interface Task {
+  id: number;
+  title: string;
+  completed: boolean;
+}
 
-// Add task (no validation, wrong status code)
+let tasks: Task[] = [];
+let idCounter = 1;
+
+// Create a new task
 app.post("/tasks", (req, res) => {
-  tasks.push(req.body);
-  res.send("Task added");
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
+  const newTask: Task = { id: idCounter++, title, completed: false };
+  tasks.push(newTask);
+  res.status(201).json(newTask);
 });
 
-// Get tasks (no error handling, returns raw array)
+// Get all tasks
 app.get("/tasks", (req, res) => {
-  res.send(tasks);
+  res.json(tasks);
 });
 
-// Delete task (no validation, no proper status code)
+// Toggle task completion
+app.patch("/tasks/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const task = tasks.find((t) => t.id === id);
+
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  task.completed = !task.completed;
+  res.json(task);
+});
+
+// Delete task
 app.delete("/tasks/:id", (req, res) => {
   const id = parseInt(req.params.id);
-  tasks = tasks.filter((t: any, i: number) => i !== id);
-  res.send("Deleted");
+  const index = tasks.findIndex((t) => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  const deleted = tasks.splice(index, 1);
+  res.json({ deleted: deleted[0] });
 });
 
 app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+  console.log("✅ Server running on http://localhost:3000");
 });
