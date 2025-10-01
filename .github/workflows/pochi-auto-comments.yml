@@ -43,11 +43,11 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, // ← optionally change to a dedicated tracking issue
+              issue_number: 1, // 👈 change to a dedicated tracking issue
               body: `/pochi summarize these commits:\n\n${commits}`
             });
 
-    issue_design_note:
+  issue_design_note:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
@@ -71,14 +71,6 @@ jobs:
               "",
               "After the diagram, add a short text explanation."
             ].join("\n");
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              body
-            });
-
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
