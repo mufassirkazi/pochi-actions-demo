@@ -1,13 +1,13 @@
 name: Pochi Auto-Comments
 
-on:
-  pull_request:
-    types: [opened]
-  push:
-    branches:
-      - main
-  issues:
-    types: [opened]
+# on:
+#  pull_request:
+#    types: [opened]
+#  push:
+#    branches:
+#      - main
+#  issues:
+#    types: [opened]
 
 permissions:
   issues: write
