@@ -4,14 +4,15 @@ on:
   issue_comment:
     types: [created]
 
+permissions:   # 👈 move this to the workflow level
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   pochi:
     if: startsWith(github.event.comment.body, '/pochi')
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
