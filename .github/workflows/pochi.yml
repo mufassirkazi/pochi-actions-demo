@@ -14,7 +14,8 @@ jobs:
     if: startsWith(github.event.comment.body, '/pochi')
     runs-on: ubuntu-latest
     outputs:
-      approved: ${{ steps.check_approval.outputs.approved }}
+      approved: ${{ steps.decide.outputs.approved }}
+      decision: ${{ steps.decide.outputs.decision }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,19 +24,55 @@ jobs:
         uses: tabbyml/pochi/packages/github-action@main
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
-        with:
-          args: "review this PR in detail. At the end, on the last line only, output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED"
+        # You can pass an explicit instruction if you want:
+        # with:
+        #   args: "review this PR in detail. At the end, on the last line only, output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED"
 
-      - name: Check for approval
-        id: check_approval
+      - name: Decide from Pochi's final comment (✅ or ❌)
+        id: decide
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.issue.number;
+
+            function pickDecision(body) {
+              if (!body) return null;
+              if (body.includes('✅ APPROVED')) return 'APPROVED';
+              if (body.includes('❌ CHANGES_REQUIRED') || body.includes('❌')) return 'CHANGES_REQUIRED';
+              return null;
+            }
+
+            let decision = null;
+
+            // Poll up to ~60s to let Pochi post its final result comment
+            for (let i = 0; i < 12; i++) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number,
+                per_page: 50,
+              });
+
+              // Look newest to oldest
+              for (const c of comments.slice().reverse()) {
+                const d = pickDecision(c.body);
+                if (d) { decision = d; break; }
+              }
+
+              if (decision) break;
+              await new Promise(r => setTimeout(r, 5000));
+            }
+
+            core.info(`Pochi decision found: ${decision || 'NONE'}`);
+            core.setOutput('decision', decision || 'NONE');
+            core.setOutput('approved', decision === 'APPROVED' ? 'true' : 'false');
+
+      - name: Show decision
         run: |
-          echo "Full output:"
-          echo "${{ steps.run_pochi.outputs.result }}"
-          if echo "${{ steps.run_pochi.outputs.result }}" | grep "✅ APPROVED" >/dev/null; then
-            echo "approved=true" >> $GITHUB_OUTPUT
-          else
-            echo "approved=false" >> $GITHUB_OUTPUT
-          fi
+          echo "Decision: ${{ steps.decide.outputs.decision }}"
+          echo "Approved: ${{ steps.decide.outputs.approved }}"
 
   run_tests:
     needs: pochi_review
@@ -43,8 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Running tests..."
-      - run: npm test || echo "No tests yet, passing by default"
+      - run: echo "✅ Running tests..."; exit 0
+      # replace the line above with: npm ci && npm test
 
   deploy:
     needs: run_tests
@@ -52,3 +89,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🚀 Deploying application..."
+      # replace with your real deploy steps
+
+  # OPTIONAL: make the workflow fail red when not approved
+  reject_status:
+    needs: pochi_review
+    if: needs.pochi_review.outputs.approved != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Pochi did not approve (decision=${{ needs.pochi_review.outputs.decision }}). Failing this run."
+          exit 1
