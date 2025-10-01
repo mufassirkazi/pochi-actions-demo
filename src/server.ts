@@ -17,6 +17,10 @@ app.get("/api/users", (req, res) => {
   }
 });
 
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 // Get user by ID with proper error handling
 app.get("/api/users/:id", (req, res) => {
   try {
