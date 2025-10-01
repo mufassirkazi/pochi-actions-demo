@@ -47,7 +47,7 @@ jobs:
               body: `/pochi summarize these commits:\n\n${commits}`
             });
 
-  issue_design_note:
+   issue_design_note:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
@@ -59,10 +59,11 @@ jobs:
             const body = [
               "/pochi reply-only",
               "",
-              "Do not create or edit files. Stay inside this comment only.",
+              "⚠️ IMPORTANT: Do not create or edit files. Stay inside this issue comment only.",
+              "",
               "Only output Mermaid diagrams as fenced code blocks with proper newlines.",
               "",
-              "Example format:",
+              "Correct format example:",
               "",
               "```mermaid",
               "graph TD",
@@ -78,3 +79,4 @@ jobs:
               issue_number: context.payload.issue.number,
               body
             });
+
