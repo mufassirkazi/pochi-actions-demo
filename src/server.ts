@@ -17,6 +17,10 @@ app.get("/api/users", (req, res) => {
   }
 });
 
+app.get("/version", (_req, res) => {
+  res.json({ version: "1.0.0" });
+});
+
 // Get user by ID with proper error handling
 app.get("/api/users/:id", (req, res) => {
   try {
