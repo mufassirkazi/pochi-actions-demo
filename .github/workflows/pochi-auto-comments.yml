@@ -48,7 +48,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, // TODO: replace with your tracking issue number
+              issue_number: 1, // 👈 Change this to an actual tracking issue number
               body
             });
 
@@ -62,12 +62,12 @@ jobs:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           script: |
             const body = [
-              "/pochi reply-only",
+              "/pochi reply-only --no-files --no-tools",
               "",
-              "Do not create or edit files. Stay inside this issue comment only.",
-              "Only output Mermaid diagrams as fenced code blocks with proper newlines.",
+              "⚠️ Do not edit files or run commands.",
+              "Stay inside this issue comment only.",
               "",
-              "Correct format example:",
+              "Format requirement:",
               "",
               "```mermaid",
               "graph TD",
@@ -76,6 +76,7 @@ jobs:
               "",
               "After the diagram, add a short text explanation."
             ].join("\n");
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
