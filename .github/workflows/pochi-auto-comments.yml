@@ -69,10 +69,10 @@ jobs:
               "",
               "Format requirement:",
               "",
-              "```mermaid",
-              "graph TD",
+              "```mermaid",     // 👈 here
+              "graph TD",       // 👈 next line after mermaid; notice the line break
               "  A[Start] --> B[Next]",
-              "```",
+              "```",            // 👈 closing fence
               "",
               "After the diagram, add a short text explanation."
             ].join("\n");
