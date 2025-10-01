@@ -33,7 +33,9 @@ jobs:
 
   run_tests:
     needs: pochi_review
-    if: startsWith(needs.pochi_review.outputs.review_result, '✅ APPROVED')
+    if: |
+      contains(needs.pochi_review.outputs.review_result, '✅ APPROVED') &&
+      !contains(needs.pochi_review.outputs.review_result, '❌ CHANGES_REQUIRED')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,7 +44,7 @@ jobs:
       - name: Run Tests
         run: |
           echo "✅ Running fake tests..."
-          # replace with: npm test
+          # replace with your real tests
           exit 0
 
   deploy:
