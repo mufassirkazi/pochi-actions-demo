@@ -39,15 +39,20 @@ jobs:
         with:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           script: |
-            const commits = context.payload.commits.map(c => `- ${c.message}`).join("\n");
+            const commits = (context.payload.commits || []).map(c => `- ${c.message}`).join("\n");
+            const body = [
+              "/pochi summarize these commits:",
+              "",
+              commits
+            ].join("\n");
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, // 👈 change to a dedicated tracking issue
-              body: `/pochi summarize these commits:\n\n${commits}`
+              issue_number: 1, // TODO: replace with your tracking issue number
+              body
             });
 
-   issue_design_note:
+  issue_design_note:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
@@ -59,8 +64,7 @@ jobs:
             const body = [
               "/pochi reply-only",
               "",
-              "⚠️ IMPORTANT: Do not create or edit files. Stay inside this issue comment only.",
-              "",
+              "Do not create or edit files. Stay inside this issue comment only.",
               "Only output Mermaid diagrams as fenced code blocks with proper newlines.",
               "",
               "Correct format example:",
@@ -72,11 +76,9 @@ jobs:
               "",
               "After the diagram, add a short text explanation."
             ].join("\n");
-
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
               body
             });
-
