@@ -1,0 +1,42 @@
+name: Pochi Auto-Comments
+
+on:
+  pull_request:
+    types: [opened]
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  pr_auto_summary:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment to trigger Pochi summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "/pochi summarize this PR. Provide a high-level overview, list the key changes, any risk areas, and what to test."
+            });
+
+  issue_design_note:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment to trigger Pochi design draft
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: "/pochi read this issue and propose: problem breakdown, approach options (pros/cons), acceptance criteria, edge cases, and the smallest viable milestone."
+            });
