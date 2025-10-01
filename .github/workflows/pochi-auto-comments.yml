@@ -74,7 +74,7 @@ jobs:
               "  A[Start] --> B[Next]",
               "```",            // 👈 closing fence
               "",
-              "After the diagram, add a short text explanation."
+              "Notice that after ```mermaid, there is a line break and then each line is added after a line break. You need to follow that format in order for the Mermaid chart to render inside the Github comment. After the diagram, add a short text explanation."
             ].join("\n");
 
             await github.rest.issues.createComment({
