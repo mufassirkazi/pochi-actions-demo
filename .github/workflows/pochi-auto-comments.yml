@@ -61,5 +61,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "/pochi draft design notes for this issue. Break down problem, options, acceptance criteria, and edge cases. (auto-triggered)"
+              body: "/pochi draft design notes for this issue. Show the solution as a Mermaid diagram (flowchart or architecture graph) and add a short text explanation."
             });
