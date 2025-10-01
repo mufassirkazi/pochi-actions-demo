@@ -50,18 +50,18 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, // 👈 replace with an always-open "changelog" issue ID
+              issue_number: 1, // 👈 replace with an always-open "changelog" issue number
               body: `/pochi summarize these commits:\n\n${commits}`
             });
 
   # -------------------------------
-  # Issue → design note (Mermaid)
+  # Issue → design note (no files touched)
   # -------------------------------
   issue_design_note:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
-      - name: Auto-comment with Pochi instructions
+      - name: Auto-comment with design request
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
@@ -69,19 +69,13 @@ jobs:
             const body = [
               "/pochi reply-only --no-files --no-tools",
               "",
-              "⚠️ Do not edit files or run commands.",
-              "Stay inside this issue comment only.",
+              "📌 Draft design steps for this issue:",
+              "- Break down the problem",
+              "- Propose solution approaches (with pros/cons)",
+              "- Identify risks & edge cases",
+              "- Suggest acceptance criteria",
               "",
-              "When outputting a Mermaid diagram, use **this exact format**:",
-              "",
-              "```mermaid",
-              "graph TD",
-              "  A[Start] --> B[Next]",
-              "```",
-              "",
-              "⬆️ Notice the line break after `mermaid`. Each line must be separate.",
-              "",
-              "After the diagram, add a short text explanation."
+              "⚠️ Do not create or edit any files — stay inside this issue comment only."
             ].join("\n");
 
             await github.rest.issues.createComment({
@@ -89,70 +83,4 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
               body
-            });
-
-  # -------------------------------
-  # Fixer for Mermaid formatting
-  # -------------------------------
-  fix_mermaid_output:
-    needs: issue_design_note
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for Pochi reply
-        run: sleep 45   # give Pochi enough time to post its reply
-
-      - name: Fetch latest Pochi comment with retry
-        id: fetch
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
-          script: |
-            let pochiComment = null;
-            for (let attempt = 0; attempt < 5; attempt++) {
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.issue.number,
-                per_page: 10,
-                sort: "created",
-                direction: "desc"
-              });
-              pochiComment = comments.find(c =>
-                c.user.login.includes("github-actions") &&
-                c.body.includes("```mermaid")
-              );
-              if (pochiComment) {
-                console.log("Found Pochi comment ✅");
-                break;
-              }
-              console.log(`Retry ${attempt + 1}: Pochi comment not found, waiting 10s...`);
-              await new Promise(r => setTimeout(r, 10000)); // wait 10s
-            }
-            if (!pochiComment) {
-              core.setFailed("Could not find Pochi mermaid comment");
-            } else {
-              core.setOutput("comment_body", pochiComment.body);
-              core.setOutput("comment_id", pochiComment.id);
-            }
-
-      - name: Rewrite Mermaid formatting
-        if: steps.fetch.outputs.comment_body != ''
-        run: |
-          FIXED=$(echo "${{ steps.fetch.outputs.comment_body }}" \
-            | sed 's/```mermaid graph/```mermaid\n graph/')
-          echo "fixed_body<<EOF" >> $GITHUB_ENV
-          echo "$FIXED" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Post corrected Mermaid comment
-        if: steps.fetch.outputs.comment_body != ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              body: process.env.fixed_body
             });
