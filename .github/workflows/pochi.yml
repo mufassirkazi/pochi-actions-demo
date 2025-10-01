@@ -3,15 +3,19 @@ name: Pochi PR Assistant
 on:
   issue_comment:
     types: [created]
+  workflow_run:
+    workflows: ["Pochi Auto-Comments"]
+    types:
+      - completed
 
-permissions:   # 👈 move this to the workflow level
+permissions:
   contents: write
   issues: write
   pull-requests: write
 
 jobs:
   pochi:
-    if: startsWith(github.event.comment.body, '/pochi')
+    if: github.event_name == 'issue_comment' || github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
