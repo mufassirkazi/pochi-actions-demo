@@ -1,27 +1,88 @@
-# pochi-actions-demo
-Pochi GitHub Actions integration
+# Task Management API (Express + React)
 
-## API Endpoints
+This project is a simple full-stack demo with an **Express.js backend** and a **React frontend**.  
+It allows you to manage tasks with **create, read, update, and delete (CRUD)** operations.
 
-### Get all users
-GET /api/users
+---
 
-### Get user by ID
-GET /api/users/:id
+## Backend: Express API
 
-### Add a new user
-POST /api/users
-Body: { "id": number, "name": string }
+### Endpoints
 
-### Update a user
-PUT /api/users/:id
-Body: { "name": string }
+- **POST `/tasks`** → Create a new task  
+  - Request body: `{ "title": "string" }`  
+  - Response: `201 Created` with new task object  
 
-### Delete a user
-DELETE /api/users/:id
+- **GET `/tasks`** → Get all tasks  
+  - Response: Array of tasks  
 
-## Features
-- Express.js backend with REST API
-- React frontend with TypeScript
-- Proper error handling and validation
-- Full CRUD operations for users
+- **PATCH `/tasks/:id`** → Toggle a task’s completion status  
+  - Response: Updated task  
+
+- **DELETE `/tasks/:id`** → Delete a task  
+  - Response: `{ deleted: task }`
+
+---
+
+## Frontend: React
+
+The React frontend provides:
+
+- Task list with **loading state**
+- Add new task
+- Toggle task completion (strike-through style)
+- Delete task
+
+See `src/components/TaskList.tsx`.
+
+---
+
+## Example Usage
+
+### Add a Task
+
+```bash
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Write tutorial"}'
+```
+
+## Response:
+```json
+{
+  "id": 1,
+  "title": "Write tutorial",
+  "completed": false
+}
+```
+
+## Get All Tasks
+```bash
+curl http://localhost:3000/tasks
+```
+
+
+## Response:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Write tutorial",
+    "completed": false
+  }
+]
+
+```
+
+## Running Locally
+
+```bash
+# install dependencies
+npm install
+
+# start dev server
+npm run dev
+```
+
+Server runs on http://localhost:3000
