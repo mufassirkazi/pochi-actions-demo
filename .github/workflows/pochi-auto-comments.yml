@@ -49,7 +49,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: 1, # 👈 change this to a real tracking issue number
+              issue_number: 1, # 👈 replace with a real tracking issue number
               body
             });
 
@@ -68,15 +68,15 @@ jobs:
               "⚠️ Do not edit files or run commands.",
               "Stay inside this issue comment only.",
               "",
-              "Format requirement (copy exactly, including newlines):",
+              "When outputting a Mermaid diagram, use **this exact format**:",
               "",
-              "```mermaid\\n",
-              "graph TD\\n",
-              "  A[Start] --> B[Next]\\n",
-              "```",
+              "\\`\\`\\`mermaid",
+              "graph TD",
+              "  A[Start] --> B[Next]",
+              "\\`\\`\\`",
               "",
-              "⬆️ Each line must be on its own line with explicit newlines (`\\n`).",
-              "Otherwise GitHub will not render the diagram.",
+              "⬆️ Copy this style exactly (notice the line breaks).",
+              "Do NOT collapse into one line. Each line must remain separate.",
               "",
               "After the diagram, add a short text explanation."
             ].join("\n");
