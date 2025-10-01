@@ -14,7 +14,7 @@ jobs:
     if: startsWith(github.event.comment.body, '/pochi')
     runs-on: ubuntu-latest
     outputs:
-      result: ${{ steps.run_pochi.outputs.result }}
+      decision: ${{ steps.extract_decision.outputs.decision }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,17 +25,23 @@ jobs:
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
 
-      - name: Debug Pochi output
+      - name: Debug raw output
         run: |
           echo "=== RAW POCHI OUTPUT START ==="
           echo "${{ steps.run_pochi.outputs.result }}"
           echo "=== RAW POCHI OUTPUT END ==="
 
+      - name: Extract final decision
+        id: extract_decision
+        run: |
+          # Get the last non-empty line of Pochi's output
+          decision=$(echo "${{ steps.run_pochi.outputs.result }}" | grep -v '^\s*$' | tail -n 1 | xargs)
+          echo "Final decision: $decision"
+          echo "decision=$decision" >> $GITHUB_OUTPUT
+
   run_tests:
     needs: pochi_review
-    if: |
-      contains(needs.pochi_review.outputs.result, '✅ APPROVED') &&
-      !contains(needs.pochi_review.outputs.result, '❌ CHANGES_REQUIRED')
+    if: needs.pochi_review.outputs.decision == '✅ APPROVED'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,14 +49,4 @@ jobs:
 
       - name: Run Tests
         run: |
-          echo "✅ Running fake tests..."
-          # replace with: npm test
-          exit 0
-
-  deploy:
-    needs: run_tests
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy
-        run: echo "🚀 Deploying application..."
+          echo "✅ Running f
