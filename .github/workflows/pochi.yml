@@ -1,4 +1,4 @@
-name: Pochi PR Assistant
+name: Pochi Reviewer & Gatekeeper
 
 on:
   issue_comment:
@@ -10,16 +10,34 @@ permissions:
   pull-requests: write
 
 jobs:
-  pochi:
+  pochi_review:
     if: startsWith(github.event.comment.body, '/pochi')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Run Pochi
+        id: pochi
         uses: tabbyml/pochi/packages/github-action@main
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
+
+  run_tests:
+    needs: pochi_review
+    if: contains(steps.pochi.outputs.result, '✅ APPROVED')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Tests
+        run: echo "✅ Running fake tests..." && exit 0
+
+  deploy:
+    needs: run_tests
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        run: echo "🚀 Deploying application..."
