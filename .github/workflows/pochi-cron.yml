@@ -1,7 +1,7 @@
 name: Pochi Continuous Agent
 
 on:
-  workflow_dispatch:   # 👈 lets you trigger manually for demo
+  workflow_dispatch:   # manual trigger for demo
   schedule:
     - cron: "0 0 * * *"    # nightly at midnight UTC
 
@@ -14,12 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Pochi TODO/FIXME Scan
-        uses: tabbyml/pochi/packages/github-action@main
-        env:
-          POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
+
+      - name: Scan TODOs and create issues
+        uses: actions/github-script@v7
         with:
-          args: |
-            Scan the repository for TODO or FIXME comments in code.
-            For each one, open a GitHub Issue with title "TODO: <short summary>"
-            and include the filename + line number in the description.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require("fs");
+            const glob = require("glob");
+
+            // find all source files
+            const files = glob.sync("src/**/*.{ts,tsx,js,jsx}");
+
+            for (const file of files) {
+              const lines = fs.readFileSync(file, "utf-8").split("\n");
+              lines.forEach((line, i) => {
+                if (line.includes("TODO") || line.includes("FIXME")) {
+                  const title = line.trim().slice(0, 60);
+                  github.rest.issues.create({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title: `TODO in ${file}:${i + 1}`,
+                    body: `Found in \`${file}\` line ${i + 1}:\n\n${line.trim()}`
+                  });
+                }
+              });
+            }
