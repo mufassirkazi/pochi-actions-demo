@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   pochi_review:
-    # run on PR open/sync OR when a PR comment contains /pochi
     if: |
       (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' &&
@@ -21,7 +20,7 @@ jobs:
        contains(github.event.comment.body, '/pochi'))
     runs-on: ubuntu-latest
     outputs:
-      review_result: ${{ steps.run_pochi.outputs.result }}
+      review_result: ${{ steps.extract.outputs.review_result }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,14 +35,12 @@ jobs:
             review this PR in detail. At the end, on the last line only,
             output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED
 
-      # Use block scalars so YAML doesn't choke on ${{ … }}
-      - name: Debug Pochi output (string)
+      # Capture last line of Pochi’s output into a proper job output
+      - name: Extract decision
+        id: extract
         run: |
-          echo "Pochi result: ${{ steps.run_pochi.outputs.result }}"
-
-      - name: Debug Pochi outputs (JSON)
-        run: |
-          echo '${{ toJSON(steps.run_pochi.outputs) }}'
+          last_line="$(echo "${{ steps.run_pochi.outputs.result }}" | tail -n 1)"
+          echo "review_result=$last_line" >> $GITHUB_OUTPUT
 
   run_tests:
     needs: pochi_review
@@ -55,7 +52,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          echo "✅ Running tests... (replace with your test command)"
+          echo "✅ Running tests... (replace with real test command)"
           # e.g. npm ci && npm test
 
   deploy:
@@ -78,7 +75,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "🚀 Deployment complete for PR #${{ github.event.pull_request.number || github.event.issue.number }}\nRepo: ${{ github.repository }}\nStatus: ✅ Approved by Pochi"
+              "text": "🚀 Deployment complete for PR #${{ github.event.pull_request.number || github.event.issue.number }}\nRepo: ${{ github.repository }}\nStatus: ${{ needs.pochi_review.outputs.review_result }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
