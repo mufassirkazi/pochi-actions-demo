@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   pochi_review:
+    # Run on PR open/sync OR when a PR comment contains "/pochi"
     if: |
       (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' &&
@@ -35,12 +36,22 @@ jobs:
             review this PR in detail. At the end, on the last line only,
             output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED
 
-      # Capture last line of Pochi’s output into a proper job output
+      # Capture last line of Pochi’s output into a real output
       - name: Extract decision
         id: extract
         run: |
           last_line="$(echo "${{ steps.run_pochi.outputs.result }}" | tail -n 1)"
           echo "review_result=$last_line" >> $GITHUB_OUTPUT
+
+      # Debugging helpers
+      - name: Debug raw Pochi output
+        run: |
+          echo "=== Raw Output ==="
+          echo "${{ steps.run_pochi.outputs.result }}"
+
+      - name: Debug extracted decision
+        run: |
+          echo "Extracted decision: ${{ steps.extract.outputs.review_result }}"
 
   run_tests:
     needs: pochi_review
@@ -53,7 +64,9 @@ jobs:
       - name: Run Tests
         run: |
           echo "✅ Running tests... (replace with real test command)"
-          # e.g. npm ci && npm test
+          # Example:
+          # npm ci
+          # npm test
 
   deploy:
     needs: run_tests
@@ -63,7 +76,8 @@ jobs:
       - name: Deploy
         run: |
           echo "🚀 Deploying application..."
-          # e.g. npm run deploy
+          # Example:
+          # npm run deploy
 
   notify_slack:
     needs: deploy
@@ -75,7 +89,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "🚀 Deployment complete for PR #${{ github.event.pull_request.number || github.event.issue.number }}\nRepo: ${{ github.repository }}\nStatus: ${{ needs.pochi_review.outputs.review_result }}"
+              "text": "🚀 Deployment complete for PR #${{ github.event.pull_request.number || github.event.issue.number }}\nRepo: ${{ github.repository }}\nDecision: ${{ needs.pochi_review.outputs.review_result }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
