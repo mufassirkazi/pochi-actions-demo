@@ -106,6 +106,8 @@ app.delete("/api/users/:id", (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
+
+  // TODO: improve validation
 });
 
 app.listen(3000, () => {
