@@ -1,0 +1,21 @@
+name: Slack Notifications
+
+on:
+  workflow_run:
+    workflows: ["Pochi Reviewer & Gatekeeper"] # 👈 name of your pochi.yml workflow
+    types:
+      - completed
+
+jobs:
+  notify_slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚀 Workflow *${{ github.workflow }}* finished.\n*Repo:* ${{ github.repository }}\n*PR:* ${{ github.event.workflow_run.pull_requests[0].html_url || 'N/A' }}\n*Conclusion:* ${{ github.event.workflow_run.conclusion }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
