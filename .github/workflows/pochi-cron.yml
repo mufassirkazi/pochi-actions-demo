@@ -21,10 +21,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require("fs");
-            const glob = require("glob");
+            const globLib = require("glob"); // 👈 renamed to avoid conflict
 
             // find all source files
-            const files = glob.sync("src/**/*.{ts,tsx,js,jsx}");
+            const files = globLib.sync("src/**/*.{ts,tsx,js,jsx}");
 
             for (const file of files) {
               const lines = fs.readFileSync(file, "utf-8").split("\n");
