@@ -1,113 +1,72 @@
 import express from "express";
+import path from "path";
 
 const app = express();
 app.use(express.json());
 
-let users: { id: number; name: string }[] = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" },
-];
+// Serve static files from the React app build directory in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "client")));
+  
+  // Serve the React app for any non-API routes
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "client", "index.html"));
+  });
+}
 
-// Get all users
-app.get("/api/users", (req, res) => {
-  try {
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+interface Task {
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+let tasks: Task[] = [];
+let idCounter = 1;
+
+// Create a new task
+app.post("/tasks", (req, res) => {
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: "Title is required" });
   }
+
+  const newTask: Task = { id: idCounter++, title, completed: false };
+  tasks.push(newTask);
+  res.status(201).json(newTask);
 });
 
-// Get user by ID with proper error handling
-app.get("/api/users/:id", (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid user ID" });
-    }
-    
-    const user = users.find((u) => u.id === id);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
+// Get all tasks
+app.get("/tasks", (req, res) => {
+  res.json(tasks);
 });
 
-// Add user with validation and duplicate checking
-app.post("/api/users", (req, res) => {
-  try {
-    const { id, name } = req.body;
-    
-    // Validate input
-    if (!id || !name) {
-      return res.status(400).json({ error: "ID and name are required" });
-    }
-    
-    if (typeof id !== "number" || typeof name !== "string") {
-      return res.status(400).json({ error: "ID must be a number and name must be a string" });
-    }
-    
-    // Check for duplicates
-    if (users.some((user) => user.id === id)) {
-      return res.status(409).json({ error: "User with this ID already exists" });
-    }
-    
-    users.push({ id, name });
-    res.status(201).json({ id, name });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+// Toggle task completion
+app.patch("/tasks/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const task = tasks.find((t) => t.id === id);
+
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
   }
+
+  task.completed = !task.completed;
+  res.json(task);
 });
 
-// Update user
-app.put("/api/users/:id", (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { name } = req.body;
-    
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid user ID" });
-    }
-    
-    if (!name || typeof name !== "string") {
-      return res.status(400).json({ error: "Name is required and must be a string" });
-    }
-    
-    const userIndex = users.findIndex((u) => u.id === id);
-    if (userIndex === -1) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
-    users[userIndex] = { id, name };
-    res.json({ id, name });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+// Delete task
+app.delete("/tasks/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const index = tasks.findIndex((t) => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Task not found" });
   }
+
+  const deleted = tasks.splice(index, 1);
+  res.json({ deleted: deleted[0] });
 });
 
-// Delete user
-app.delete("/api/users/:id", (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid user ID" });
-    }
-    
-    const userIndex = users.findIndex((u) => u.id === id);
-    if (userIndex === -1) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
-    users.splice(userIndex, 1);
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-app.listen(3000, () => {
-  console.log("Server started on port 3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
