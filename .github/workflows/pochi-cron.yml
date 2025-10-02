@@ -21,16 +21,27 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require("fs");
-            const globLib = require("glob"); // 👈 renamed to avoid conflict
+            const path = require("path");
 
-            // find all source files
-            const files = globLib.sync("src/**/*.{ts,tsx,js,jsx}");
+            // simple recursive scan
+            function walk(dir, filelist = []) {
+              fs.readdirSync(dir).forEach(file => {
+                const filepath = path.join(dir, file);
+                if (fs.statSync(filepath).isDirectory()) {
+                  filelist = walk(filepath, filelist);
+                } else if (/\.(ts|tsx|js|jsx)$/.test(file)) {
+                  filelist.push(filepath);
+                }
+              });
+              return filelist;
+            }
+
+            const files = walk("src");
 
             for (const file of files) {
               const lines = fs.readFileSync(file, "utf-8").split("\n");
               lines.forEach((line, i) => {
                 if (line.includes("TODO") || line.includes("FIXME")) {
-                  const title = line.trim().slice(0, 60);
                   github.rest.issues.create({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
