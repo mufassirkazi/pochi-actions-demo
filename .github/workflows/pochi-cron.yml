@@ -1,0 +1,25 @@
+name: Pochi Continuous Agent
+
+on:
+  workflow_dispatch:   # 👈 lets you trigger manually for demo
+  schedule:
+    - cron: "0 0 * * *"    # nightly at midnight UTC
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  nightly_todo_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Pochi TODO/FIXME Scan
+        uses: tabbyml/pochi/packages/github-action@main
+        env:
+          POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
+        with:
+          args: |
+            Scan the repository for TODO or FIXME comments in code.
+            For each one, open a GitHub Issue with title "TODO: <short summary>"
+            and include the filename + line number in the description.
