@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   pochi_review:
-    # only run on PR comments that contain "/pochi"
+    # run on PR open/sync OR when a PR comment contains /pochi
     if: |
       (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' &&
@@ -36,8 +36,14 @@ jobs:
             review this PR in detail. At the end, on the last line only,
             output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED
 
-      - name: Debug Pochi output
-        run: echo "Pochi result: ${{ steps.run_pochi.outputs.result }}"
+      # Use block scalars so YAML doesn't choke on ${{ … }}
+      - name: Debug Pochi output (string)
+        run: |
+          echo "Pochi result: ${{ steps.run_pochi.outputs.result }}"
+
+      - name: Debug Pochi outputs (JSON)
+        run: |
+          echo '${{ toJSON(steps.run_pochi.outputs) }}'
 
   run_tests:
     needs: pochi_review
@@ -46,8 +52,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Run Tests
-        run: echo "✅ Running tests..."
+        run: |
+          echo "✅ Running tests... (replace with your test command)"
+          # e.g. npm ci && npm test
 
   deploy:
     needs: run_tests
@@ -55,7 +64,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy
-        run: echo "🚀 Deploying application..."
+        run: |
+          echo "🚀 Deploying application..."
+          # e.g. npm run deploy
 
   notify_slack:
     needs: deploy
@@ -67,7 +78,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "🚀 Deployment complete for PR #${{ github.event.issue.number || github.event.pull_request.number }}\nRepo: ${{ github.repository }}\nStatus: ✅ Approved by Pochi"
+              "text": "🚀 Deployment complete for PR #${{ github.event.pull_request.number || github.event.issue.number }}\nRepo: ${{ github.repository }}\nStatus: ✅ Approved by Pochi"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
