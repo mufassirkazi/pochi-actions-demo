@@ -53,16 +53,19 @@ jobs:
       - name: Deploy
         run: |
           echo "🚀 Deploying application..."
-          # e.g. npm run deploy or your real deploy step
+          # e.g. npm run deploy or your actual deployment script
 
   notify_slack:
     needs: deploy
     if: success()
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Slack
-        run: |
-          payload=$(jq -n --arg text "🚀 Deployment complete for PR #${{ github.event.pull_request.number }} — ✅ Approved by Pochi" '{text: $text}')
-          curl -X POST -H 'Content-type: application/json' \
-            --data "$payload" \
-            ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚀 Deployment complete for PR #${{ github.event.pull_request.number }}\nRepo: ${{ github.repository }}\nStatus: ✅ Approved by Pochi"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
