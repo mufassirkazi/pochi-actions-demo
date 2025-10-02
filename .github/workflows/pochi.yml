@@ -24,10 +24,13 @@ jobs:
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
         with:
-          args: "review this PR in detail. At the end, on the last line only, output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED"
+          args: >-
+            review this PR in detail. At the end, on the last line only,
+            output exactly one of: ✅ APPROVED or ❌ CHANGES_REQUIRED
 
       - name: Debug Pochi output
-        run: echo "Pochi result: ${{ steps.run_pochi.outputs.result }}"
+        run: |
+          echo "Pochi result: ${{ steps.run_pochi.outputs.result }}"
 
   run_tests:
     needs: pochi_review
@@ -38,23 +41,28 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Tests
-        run: echo "✅ Running tests... (replace with npm test, pytest, etc.)"
+        run: |
+          echo "✅ Running tests... (replace with your test command)"
+          # e.g. npm ci && npm test
 
   deploy:
     needs: run_tests
-    runs-on: ubuntu-latest
     if: success()
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy
-        run: echo "🚀 Deploying application..."
+        run: |
+          echo "🚀 Deploying application..."
+          # e.g. npm run deploy or your real deploy step
 
   notify_slack:
     needs: deploy
-    runs-on: ubuntu-latest
     if: success()
+    runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
         run: |
+          payload=$(jq -n --arg text "🚀 Deployment complete for PR #${{ github.event.pull_request.number }} — ✅ Approved by Pochi" '{text: $text}')
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"🚀 Deployment complete for PR #${{ github.event.pull_request.number }} — ✅ Approved by Pochi\"}" \
+            --data "$payload" \
             ${{ secrets.SLACK_WEBHOOK_URL }}
