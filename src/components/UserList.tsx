@@ -42,7 +42,7 @@ export default function UserList() {
 
   return (
     <div>
-      <h2>Users</h2>
+      <h2>Users (auto-summary demo)</h2>
       {users.length === 0 ? (
         <p>No users found</p>
       ) : (
