@@ -3,6 +3,11 @@ import express from "express";
 const app = express();
 app.use(express.json());
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "OK" });
+});
+
 let users: { id: number; name: string }[] = [
   { id: 1, name: "Alice" },
   { id: 2, name: "Bob" },
