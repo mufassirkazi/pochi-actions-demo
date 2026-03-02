@@ -17,6 +17,11 @@ app.get("/api/users", (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK" });
+});
+
 // Get user by ID with proper error handling
 app.get("/api/users/:id", (req, res) => {
   try {
