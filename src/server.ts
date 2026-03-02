@@ -1,7 +1,14 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 
 const app = express();
 app.use(express.json());
+
+// Request ID middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  (req as any).id = crypto.randomUUID();
+  next();
+});
 
 let users: { id: number; name: string }[] = [
   { id: 1, name: "Alice" },
@@ -9,16 +16,16 @@ let users: { id: number; name: string }[] = [
 ];
 
 // Get all users
-app.get("/api/users", (req, res) => {
+app.get("/api/users", (req, res, next) => {
   try {
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 });
 
 // Get user by ID with proper error handling
-app.get("/api/users/:id", (req, res) => {
+app.get("/api/users/:id", (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -32,12 +39,12 @@ app.get("/api/users/:id", (req, res) => {
     
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 });
 
 // Add user with validation and duplicate checking
-app.post("/api/users", (req, res) => {
+app.post("/api/users", (req, res, next) => {
   try {
     const { id, name } = req.body;
     
@@ -58,12 +65,12 @@ app.post("/api/users", (req, res) => {
     users.push({ id, name });
     res.status(201).json({ id, name });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 });
 
 // Update user
-app.put("/api/users/:id", (req, res) => {
+app.put("/api/users/:id", (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     const { name } = req.body;
@@ -84,12 +91,12 @@ app.put("/api/users/:id", (req, res) => {
     users[userIndex] = { id, name };
     res.json({ id, name });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 });
 
 // Delete user
-app.delete("/api/users/:id", (req, res) => {
+app.delete("/api/users/:id", (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -104,10 +111,24 @@ app.delete("/api/users/:id", (req, res) => {
     users.splice(userIndex, 1);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 
   // TODO: improve validation
+});
+
+// Centralized error handling middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  const requestId = (req as any).id || "N/A";
+  console.error(`[${requestId}] Error: ${err.message}`);
+  if (err.stack) {
+    console.error(`[${requestId}] Stack: ${err.stack}`);
+  }
+  
+  res.status(500).json({ 
+    error: "Internal server error",
+    requestId: requestId
+  });
 });
 
 app.listen(3000, () => {
