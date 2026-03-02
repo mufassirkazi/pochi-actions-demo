@@ -8,6 +8,11 @@ let users: { id: number; name: string }[] = [
   { id: 2, name: "Bob" },
 ];
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK" });
+});
+
 // Get all users
 app.get("/api/users", (req, res) => {
   try {
