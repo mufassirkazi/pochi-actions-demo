@@ -110,6 +110,15 @@ app.delete("/api/users/:id", (req, res) => {
   // TODO: improve validation
 });
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.listen(3000, () => {
   console.log("Server started on port 3000");
 });
